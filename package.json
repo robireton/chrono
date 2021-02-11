@@ -1,0 +1,19 @@
+{
+  "name": "@robireton/chrono",
+  "version": "1.0.0",
+  "description": "date/time related helpers",
+  "main": "chrono.js",
+  "scripts": {
+    "test": "node tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robireton/chrono.git"
+  },
+  "author": "Rob Ireton <rob@ireton.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/robireton/chrono/issues"
+  },
+  "homepage": "https://github.com/robireton/chrono#readme"
+}
