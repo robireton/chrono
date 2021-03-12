@@ -1,7 +1,7 @@
 'use strict'
 const chrono = require('./chrono.js')
 
-const date = new Date(2021, 1, 11, 16, 7, 48, 989)
+const date = (new Date(2021, 1, 11, 16, 7, 48, 989)).getTime()
 let errors = 0
 
 const datetag = chrono.datetag(date)

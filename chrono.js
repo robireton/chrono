@@ -19,4 +19,7 @@ module.exports.timestamp = (now = Date.now()) => {
 }
 
 // returns date (default current) as 'YYYY-MM-DD'
-module.exports.datetag = (now = new Date()) => [now.getFullYear().toString(), (now.getMonth() + 1).toString().padStart(2, '0'), now.getDate().toString().padStart(2, '0')].join('-')
+module.exports.datetag = (now = Date.now()) => {
+  const d = new Date(now)
+  return [d.getFullYear().toString(), (d.getMonth() + 1).toString().padStart(2, '0'), d.getDate().toString().padStart(2, '0')].join('-')
+}
