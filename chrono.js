@@ -15,8 +15,20 @@ export function timestamp (now = Date.now()) {
   ].join(' ') // that’s a non-breaking space
 }
 
-// returns date (default current) as 'YYYY-MM-DD'
 export function datetag (now = Date.now()) {
   const d = new Date(now)
   return [d.getFullYear().toString(), (d.getMonth() + 1).toString().padStart(2, '0'), d.getDate().toString().padStart(2, '0')].join('-')
+}
+
+export function dateFromUnix (u) {
+  if (u === null) return null
+  if (typeof u === 'undefined') return null
+  if (typeof u === 'number') return new Date(1000 * u)
+  throw new TypeError(`dateFromUnix: I don’t know what to do with “${u}” (${typeof u})`)
+}
+
+export function unixTime (n = Date.now()) {
+  if (n instanceof Date) n = n.valueOf()
+  if (typeof n === 'number') return Math.floor(n / 1000)
+  throw new TypeError(`unixTime: I don’t know what to do with “${n}” (${typeof n})`)
 }
