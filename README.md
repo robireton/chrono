@@ -6,6 +6,9 @@
 
 *date/time related helpers*
 
+Starting with v2.0.0, this is an ECMAScript module—stick with v1.x.x if you need a CommonJS module.
+
+
 ## Methods
 
 ### `timestamp` ( *number* )

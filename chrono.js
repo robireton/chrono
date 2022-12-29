@@ -1,7 +1,4 @@
-'use strict'
-
-// returns time (default current) as 'YYYY-MM-DD HH:MM:SS' string
-module.exports.timestamp = (now = Date.now()) => {
+export function timestamp (now = Date.now()) {
   const d = new Date(now)
   const p = {
     year: d.getFullYear(),
@@ -19,7 +16,7 @@ module.exports.timestamp = (now = Date.now()) => {
 }
 
 // returns date (default current) as 'YYYY-MM-DD'
-module.exports.datetag = (now = Date.now()) => {
+export function datetag (now = Date.now()) {
   const d = new Date(now)
   return [d.getFullYear().toString(), (d.getMonth() + 1).toString().padStart(2, '0'), d.getDate().toString().padStart(2, '0')].join('-')
 }
