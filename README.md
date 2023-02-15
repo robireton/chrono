@@ -23,3 +23,27 @@ Returns a Javascript `Date` object for the given unix timestamp (in seconds from
 ### `unixTime` ( *number* or *Date* )
 Returns a unix timestamp (in seconds from 1970) for a given Javascript `Date` object or equivalent number of milliseconds from 1970.
 
+### `localDate` ( *string* )
+returns a `Date` object corresponding to a local date string in 'Y-M-D' format. 'Y-M' is interpereted as 'Y-M-1'.
+
+### `months`
+An array of month information objects with fields:
+
+| field | description |
+| --- | --- |
+| `index` | 0-based month number: January = 0 … December = 11 |
+| `id` | 1-based month number: January = 1 … December = 12 |
+| `digits` | 2-digit string: January = '01' … December = '12' |
+| `long` | full month name: 'January' … 'December' |
+| `short` | 3-character month abbreviation: 'Jan' … 'Dec' |
+| `days` | number of days in month (ignoring leap-years) |
+
+### `weekdays`
+An array of weekday information objects with fields:
+
+| field | description |
+| --- | --- |
+| `index` | 0-based weekday number: Sunday = 0 … Saturday = 6 |
+| `long` | full weekday name: 'Sunday' … 'Saturday' |
+| `short` | 3-character weekday abbreviation: 'Sun' … 'Sat' |
+| `narrow` | single character abbreviation (not injective) |

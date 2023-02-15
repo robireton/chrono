@@ -1,7 +1,7 @@
 {
   "name": "@robireton/chrono",
   "type": "module",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "date/time related helpers",
   "main": "chrono.js",
   "scripts": {
