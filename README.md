@@ -26,6 +26,19 @@ Returns a unix timestamp (in seconds from 1970) for a given Javascript `Date` ob
 ### `localDate` ( *string* )
 returns a `Date` object corresponding to a local date string in 'Y-M-D' format. 'Y-M' is interpereted as 'Y-M-1'.
 
+### `Cron` ( `interval`: *number*, `days`: *iterable*, `hours`: *iterable* )
+class for creating an object that emits a `cron` event every `interval` milliseconds if current weekday index ∈ `days` and current hour index ∈ `hours`. Defaults for `days` and `hours` include all days and times. Event handlers for `cron` events are passed a `Date` object representing the instant the event was emitted.
+
+`Cron.prototype.interval`: get or set the event interval (milliseconds)
+
+`Cron.prototype.days`: get or set the `Set` of weekday indices on which events are emitted
+
+`Cron.prototype.hours`: get or set the `Set` of hour indices during which events are emitted
+
+`Cron.prototype.close()`: stop emitting events
+
+
+
 ### `months`
 An array of month information objects with fields:
 
@@ -47,3 +60,11 @@ An array of weekday information objects with fields:
 | `long` | full weekday name: 'Sunday' … 'Saturday' |
 | `short` | 3-character weekday abbreviation: 'Sun' … 'Sat' |
 | `narrow` | single character abbreviation (not injective) |
+
+### `hours`
+An array of hour information objects with fields:
+
+| field | description |
+| --- | --- |
+| `index` | 0-based hour number: 0 … 23 |
+| `digits` | 2-digit string: '00' … '23' |

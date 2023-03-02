@@ -1,3 +1,7 @@
+import process from 'node:process'
+import { EventEmitter } from 'node:events'
+import { setInterval, clearInterval } from 'node:timers'
+
 export function timestamp (now = Date.now()) {
   const d = new Date(now)
   const p = {
@@ -62,3 +66,68 @@ export const weekdays = [
   { index: 5, long: 'Friday', short: 'Fri', narrow: 'F' },
   { index: 6, long: 'Saturday', short: 'Sat', narrow: 'S' }
 ]
+
+export const hours = [
+  { index: 0, digits: '00' },
+  { index: 1, digits: '01' },
+  { index: 2, digits: '02' },
+  { index: 3, digits: '03' },
+  { index: 4, digits: '04' },
+  { index: 5, digits: '05' },
+  { index: 6, digits: '06' },
+  { index: 7, digits: '07' },
+  { index: 8, digits: '08' },
+  { index: 9, digits: '09' },
+  { index: 10, digits: '10' },
+  { index: 11, digits: '11' },
+  { index: 12, digits: '12' },
+  { index: 13, digits: '13' },
+  { index: 14, digits: '14' },
+  { index: 15, digits: '15' },
+  { index: 16, digits: '16' },
+  { index: 17, digits: '17' },
+  { index: 18, digits: '18' },
+  { index: 19, digits: '19' },
+  { index: 20, digits: '20' },
+  { index: 21, digits: '21' },
+  { index: 22, digits: '22' },
+  { index: 23, digits: '23' }
+]
+
+export class Cron extends EventEmitter {
+  #interval
+  #timeout
+
+  constructor (interval, activeDays = weekdays.map(day => day.index), activeHours = hours.map(hour => hour.index)) {
+    super()
+    this.days = new Set(activeDays)
+    this.hours = new Set(activeHours)
+    this.#interval = interval
+    this.#timeout = setInterval(this.#emit.bind(this), this.#interval)
+    process.on('exit', this.close.bind(this))
+  }
+
+  #emit () {
+    const now = new Date()
+    if (this.days.has(now.getDay()) && this.hours.has(now.getHours())) {
+      this.emit('cron', now)
+    }
+  }
+
+  close () {
+    if (this.#timeout) {
+      clearInterval(this.#timeout)
+      this.#timeout = null
+    }
+  }
+
+  get interval () {
+    return this.#interval
+  }
+
+  set interval (ms) {
+    if (this.#timeout) clearInterval(this.#timeout)
+    this.#interval = ms
+    this.#timeout = setInterval(this.#emit.bind(this), this.#interval)
+  }
+}
