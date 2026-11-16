@@ -1,45 +1,59 @@
-import process from 'node:process'
 import { EventEmitter } from 'node:events'
-import { setInterval, clearInterval } from 'node:timers'
 
-export function timestamp (now = Date.now()) {
-  const d = new Date(now)
-  const p = {
-    year: d.getFullYear(),
-    month: 1 + d.getMonth(),
-    date: d.getDate(),
-    hour: d.getHours(),
-    minute: d.getMinutes(),
-    second: d.getSeconds()
+// Normalises the accepted “moment” inputs to a Temporal.Instant.
+// Numbers are epoch milliseconds, truncated toward zero the way Date does.
+function toInstant (when, caller) {
+  if (when instanceof Temporal.Instant) return when
+  if (when instanceof Date) when = when.valueOf()
+  if (typeof when === 'number') {
+    if (!Number.isFinite(when)) throw new RangeError(`${caller}: invalid time value “${when}”`)
+    return Temporal.Instant.fromEpochMilliseconds(Math.trunc(when))
   }
-
-  return [
-    [p.year, p.month, p.date].map(n => n.toString()).map(s => s.length < 2 ? `0${s}` : s).join('-'),
-    [p.hour, p.minute, p.second].map(n => n.toString()).map(s => s.length < 2 ? `0${s}` : s).join(':')
-  ].join(' ') // that’s a non-breaking space
+  throw new TypeError(`${caller}: I don’t know what to do with “${when}” (${typeof when})`)
 }
 
-export function datetag (now = Date.now()) {
-  const d = new Date(now)
-  return [d.getFullYear().toString(), (d.getMonth() + 1).toString().padStart(2, '0'), d.getDate().toString().padStart(2, '0')].join('-')
+// An omitted time zone means the system zone (which follows TZ), looked up at call time.
+// Temporal.Now.timeZoneId() can report an unusable 'Etc/Unknown' (e.g. TZ=''), whereas
+// Temporal.Now.zonedDateTimeISO() falls back to UTC, as Date’s local-time methods do.
+const systemTimeZone = () => Temporal.Now.zonedDateTimeISO().timeZoneId
+
+function zoned (when, timeZone, caller) {
+  return toInstant(when, caller).toZonedDateTimeISO(timeZone ?? systemTimeZone())
+}
+
+export function timestamp (now = Date.now(), timeZone) {
+  const zdt = zoned(now, timeZone, 'timestamp')
+  return `${zdt.toPlainDate()}\u00A0${zdt.toPlainTime().toString({ smallestUnit: 'second' })}` // non-breaking space
+}
+
+export function datetag (now = Date.now(), timeZone) {
+  return zoned(now, timeZone, 'datetag').toPlainDate().toString()
 }
 
 export function dateFromUnix (u) {
   if (u === null) return null
   if (typeof u === 'undefined') return null
-  if (typeof u === 'number') return new Date(1000 * u)
+  if (typeof u === 'number') {
+    if (!Number.isFinite(u)) throw new RangeError(`dateFromUnix: invalid time value “${u}”`)
+    return new Date(1000 * u)
+  }
   throw new TypeError(`dateFromUnix: I don’t know what to do with “${u}” (${typeof u})`)
 }
 
 export function unixTime (n = Date.now()) {
   if (n instanceof Date) n = n.valueOf()
-  if (typeof n === 'number') return Math.floor(n / 1000)
+  if (typeof n === 'number') {
+    if (!Number.isFinite(n)) throw new RangeError(`unixTime: invalid time value “${n}”`)
+    return Math.floor(n / 1000)
+  }
   throw new TypeError(`unixTime: I don’t know what to do with “${n}” (${typeof n})`)
 }
 
 export function localDate (date) {
   const [year, month, day] = date.split(/\D+/, 3).map(s => Number.parseInt(s))
-  return new Date(year, month - 1, day || 1)
+  const d = new Date(2000, 0, 1) // local midnight
+  d.setFullYear(year, (month || 1) - 1, day || 1) // setFullYear doesn’t map years 0–99 onto 1900–1999
+  return d
 }
 
 export const months = [
@@ -94,23 +108,33 @@ export const hours = [
   { index: 23, digits: '23' }
 ]
 
+function checkInterval (ms) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 1 || ms > 2147483647) throw new RangeError(`Cron: invalid interval “${ms}”`)
+  return ms
+}
+
 export class Cron extends EventEmitter {
   #interval
   #timeout
+  #timeZone
+  #days
+  #hours
 
-  constructor (interval, activeDays = weekdays.map(day => day.index), activeHours = hours.map(hour => hour.index)) {
+  constructor (interval, activeDays = weekdays.map(day => day.index), activeHours = hours.map(hour => hour.index), timeZone) {
     super()
-    this.days = new Set(activeDays)
-    this.hours = new Set(activeHours)
-    this.#interval = interval
+    this.#interval = checkInterval(interval)
+    // validate and canonicalise once, so a bad zone fails here rather than on the first tick
+    if (timeZone !== undefined) this.#timeZone = Temporal.Now.zonedDateTimeISO(timeZone).timeZoneId
+    this.days = activeDays
+    this.hours = activeHours
     this.#timeout = setInterval(this.#emit.bind(this), this.#interval)
-    process.on('exit', this.close.bind(this))
   }
 
   #emit () {
-    const now = new Date()
-    if (this.days.has(now.getDay()) && this.hours.has(now.getHours())) {
-      this.emit('cron', now)
+    const ms = Date.now() // not Temporal.Now, so that mocked timers can drive it
+    const zdt = zoned(ms, this.#timeZone, 'Cron')
+    if (this.#days.has(zdt.dayOfWeek % 7) && this.#hours.has(zdt.hour)) { // Temporal: Monday = 1 … Sunday = 7
+      this.emit('cron', new Date(ms))
     }
   }
 
@@ -121,13 +145,35 @@ export class Cron extends EventEmitter {
     }
   }
 
+  get timeZone () {
+    return this.#timeZone
+  }
+
+  get days () {
+    return this.#days
+  }
+
+  set days (iterable) {
+    this.#days = new Set(iterable)
+  }
+
+  get hours () {
+    return this.#hours
+  }
+
+  set hours (iterable) {
+    this.#hours = new Set(iterable)
+  }
+
   get interval () {
     return this.#interval
   }
 
   set interval (ms) {
-    if (this.#timeout) clearInterval(this.#timeout)
-    this.#interval = ms
-    this.#timeout = setInterval(this.#emit.bind(this), this.#interval)
+    this.#interval = checkInterval(ms)
+    if (this.#timeout) {
+      clearInterval(this.#timeout)
+      this.#timeout = setInterval(this.#emit.bind(this), this.#interval)
+    }
   }
 }
